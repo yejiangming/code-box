@@ -1,6 +1,8 @@
 #include "../include/glad/glad.h"
+#include "shader.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <cmath>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
@@ -26,76 +28,6 @@ GLFWwindow* glfwWindowInit() {
     return window;
 }
 
-unsigned int createShaderProgramer(const char* fragmentShaderSource) {
-    const char *vertexShaderSource = "#version 330 core\n\
-    layout (location = 0) in vec3 aPos;\n\
-    void main() {\n\
-        gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n\
-    }\0";
-
-     // 顶点着色器
-    // 创建一个着色器对象，还是使用 id 引用
-    unsigned int vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-    // 绑定源码 编译着色器
-    // 1 代表源码字符串数量
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    
-    std::cout << "vertex shader compile ret:" << success << std::endl;
-    if(!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "vertex shader compile failed info:" << infoLog << std::endl;
-        return 0;
-    }
-
-    // 片段着色器
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    
-    std::cout << "fragment shader compile ret:" << success << std::endl;
-    if(!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "fragment shader compile failed info:" << infoLog << std::endl;
-        return 0;
-    }
-
-    // 将着色器对象链接到一个用于渲染的着色器程序对象(shader program object)中
-
-    // 上一个着色器的输入会链接到下一个着色器的输入，当输入输出不匹配时会链接错误
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    std::cout << "shader program link ret:" << success << std::endl;
-    if(!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "shader program link failed info:" << infoLog << std::endl;
-        return 0;
-    }
-
-    // 激活 shader program object
-    glUseProgram(shaderProgram);
-
-    // 着色器链接到 shader program object 后, 删除 shader 对象
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    return shaderProgram;
-}
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -111,9 +43,10 @@ unsigned int createTrangle(float delta) {
 
     // z 坐标代表深度
     float vertices[] = {
-        -0.5f+delta, 0.5f, 0.0f,  
-        0.0f+delta, 0.0f, 0.0f,  
-        -0.5f+delta, 0.0f, 0.0f,
+        // 位置            // 颜色
+        -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  
+        0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 
+        -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f 
     };
 
     unsigned int rect_indices[] = {
@@ -144,17 +77,21 @@ unsigned int createTrangle(float delta) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
 
     // 第一个 0 代表将数据传递到 vertex shader layout(location=0) 属性中
-    // 3 指定属性大小 vec3 -> 3
-    // GLSG 中数据由 float 构成
+    // 属性值有 3 * float 个数据那么大
     // 是否希望数据被标准化(Normalize)
-    // stride 步长: 连续的顶点属性组之间的间隔
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    // stride 步长: 连续的位置点之间的间隔
+    // 位置属性
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     // 每个顶点属性从 VBO 中获取数据
     // 具体从哪个则是由调用 glVertexAttribPointer 时绑定到 GL_ARRAY_BUFFER 的 VBO 决定的
     // 所以顶点属性 0 现在会从之前定义的 VBO 中获取数据
 
     // 启用顶点属性 0, 默认是禁用的
     glEnableVertexAttribArray(0);
+
+    // 颜色属性
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // 解绑 VBO
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -190,27 +127,19 @@ int main()
         return -1;
     }
 
-    const char *fragmentShaderSource1 = "#version 330 core\n\
-    out vec4 FragColor;\n\
-    void main() {\n\
-        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n\
-    }";
-    unsigned int shaderProgramer1 =  createShaderProgramer(fragmentShaderSource1);
-    if (shaderProgramer1 == 0) {
-        std::cout << "failed to create shader programer " << std::endl;
-        return -1;
-    }
+    Shader shaderProgramer("../shader/sample.vs", 
+    "../shader/sample.fs");
 
-    const char *fragmentShaderSource2 = "#version 330 core\n\
-    out vec4 FragColor;\n\
-    void main() {\n\
-        FragColor = vec4(1.0f, 0.5f, 0.5f, 0.5f);\n\
-    }";
-    unsigned int shaderProgramer2 =  createShaderProgramer(fragmentShaderSource2);
-    if (shaderProgramer2 == 0) {
-        std::cout << "failed to create shader programer " << std::endl;
-        return -1;
-    }
+    // const char *fragmentShaderSource2 = "#version 330 core\n\
+    // out vec4 FragColor;\n\
+    // void main() {\n\
+    //     FragColor = vec4(1.0f, 0.5f, 0.5f, 0.5f);\n\
+    // }";
+    // unsigned int shaderProgramer2 =  createShaderProgramer(fragmentShaderSource2);
+    // if (shaderProgramer2 == 0) {
+    //     std::cout << "failed to create shader programer " << std::endl;
+    //     return -1;
+    // }
 
     // 设置渲染窗口大小 视口(viewport)
     // 左下角 0, 0
@@ -221,7 +150,7 @@ int main()
 
 
     unsigned int VAO1 = createTrangle(0.0f);
-    unsigned int VAO2 = createTrangle(0.5f);
+    // unsigned int VAO2 = createTrangle(0.5f);
     // render loop
     while(!glfwWindowShouldClose(window)) {
 
@@ -234,14 +163,20 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // 状态设置函数
         glClear(GL_COLOR_BUFFER_BIT); // 状态使用函数
 
-        glUseProgram(shaderProgramer1);
+        // glUseProgram(shaderProgramer1);
+        glUseProgram(shaderProgramer.id);
+
+        float timeValue = glfwGetTime();
+        float flatDelta = (sin(timeValue) / 2);
+        std::cout << "flatDelta: " << flatDelta << std::endl;
+        shaderProgramer.setFloat("flatDelta", flatDelta);
         glBindVertexArray(VAO1);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        glUseProgram(shaderProgramer2);
-        glBindVertexArray(VAO2);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        // glUseProgram(shaderProgramer2);
+        // glBindVertexArray(VAO2);
+        // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
         // 检查事件输入(如键盘输入, 鼠标移动)并调用对应的回调函数
         glfwPollEvents();
