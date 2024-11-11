@@ -17,6 +17,7 @@ find_package(OpenGL REQUIRED)
 set(SOURCES
     main.cpp
     glad.c
+    stb_image.cpp
 )
 
 # 添加可执行文件

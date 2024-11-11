@@ -3,6 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <cmath>
+#include "stb_image.h"
+
+float mixValue = 0.2f;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
@@ -37,20 +40,35 @@ void processInput(GLFWwindow *window) {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+
+    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        mixValue += 0.01f;
+        if (mixValue >= 1.0f) {
+            mixValue = 1.0f;
+        }
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        mixValue -= 0.01f;
+        if (mixValue <= 0.0f) {
+            mixValue = 0.0f;
+        }
+    }
+
+
 }
 
 unsigned int createTrangle(float delta) {
 
-    // z 坐标代表深度
     float vertices[] = {
-        // 位置            // 颜色
-        -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  
-        0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 
-        -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f 
-    };
-
-    unsigned int rect_indices[] = {
-        0, 1, 2,
+//     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
+     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
+    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
+};
+    unsigned int indices[] = {
+        0, 1, 2, 2, 3, 0
     };
 
     // openGL 核心模式要求使用 VAO
@@ -74,14 +92,14 @@ unsigned int createTrangle(float delta) {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // 第一个 0 代表将数据传递到 vertex shader layout(location=0) 属性中
     // 属性值有 3 * float 个数据那么大
     // 是否希望数据被标准化(Normalize)
     // stride 步长: 连续的位置点之间的间隔
     // 位置属性
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
     // 每个顶点属性从 VBO 中获取数据
     // 具体从哪个则是由调用 glVertexAttribPointer 时绑定到 GL_ARRAY_BUFFER 的 VBO 决定的
     // 所以顶点属性 0 现在会从之前定义的 VBO 中获取数据
@@ -90,8 +108,12 @@ unsigned int createTrangle(float delta) {
     glEnableVertexAttribArray(0);
 
     // 颜色属性
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // UV 属性
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // 解绑 VBO
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -109,6 +131,36 @@ unsigned int createTrangle(float delta) {
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     return VAO;
+}
+
+unsigned int createTexture(const char* filePath, GLenum format, GLint repeatType) {
+// 读取图片
+    int width, height, nrChannels;
+    // 加载图像时翻转 y 轴, 因为图像的 y 轴 0.0 在顶部, 而 openGL uv 坐标中的 0 代表底部
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *data = stbi_load(filePath, &width, &height, &nrChannels, 0);
+    
+    if (!data) {
+        std::cout << "Fail to read image" << std::endl;
+    }
+    // 生成纹理
+    unsigned int texture;
+    glGenTextures(1, &texture);
+
+    // 绑定纹理, 之后的纹理指令都可以配置当前绑定的纹理
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeatType);   
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeatType);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    // 自动生成多级渐远纹理    
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
+    return texture;
 }
 
 // g++ -I /home/wuchujun/helloworld/code-box/opengl-study/include main.cpp glad.c -lglfw -lGLU -lGL -lXrandr  -lrt -ldl
@@ -130,17 +182,6 @@ int main()
     Shader shaderProgramer("../shader/sample.vs", 
     "../shader/sample.fs");
 
-    // const char *fragmentShaderSource2 = "#version 330 core\n\
-    // out vec4 FragColor;\n\
-    // void main() {\n\
-    //     FragColor = vec4(1.0f, 0.5f, 0.5f, 0.5f);\n\
-    // }";
-    // unsigned int shaderProgramer2 =  createShaderProgramer(fragmentShaderSource2);
-    // if (shaderProgramer2 == 0) {
-    //     std::cout << "failed to create shader programer " << std::endl;
-    //     return -1;
-    // }
-
     // 设置渲染窗口大小 视口(viewport)
     // 左下角 0, 0
     // width 800
@@ -151,6 +192,19 @@ int main()
 
     unsigned int VAO1 = createTrangle(0.0f);
     // unsigned int VAO2 = createTrangle(0.5f);
+
+    unsigned int texture1 = createTexture("../texture/container.jpg", GL_RGB, GL_REPEAT);
+    unsigned int texture2 = createTexture("../texture/awesomeface.png", GL_RGBA, GL_REPEAT);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+
+    shaderProgramer.use();
+
+    shaderProgramer.setInt("texture1", 0);
+    shaderProgramer.setInt("texture2", 1);
+
     // render loop
     while(!glfwWindowShouldClose(window)) {
 
@@ -163,16 +217,13 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // 状态设置函数
         glClear(GL_COLOR_BUFFER_BIT); // 状态使用函数
 
-        // glUseProgram(shaderProgramer1);
-        glUseProgram(shaderProgramer.id);
 
         float timeValue = glfwGetTime();
-        float flatDelta = (sin(timeValue) / 2);
-        std::cout << "flatDelta: " << flatDelta << std::endl;
-        shaderProgramer.setFloat("flatDelta", flatDelta);
+        float mixDelta = ((sin(timeValue) / 2)+0.5f);
+        shaderProgramer.setFloat("mixValue", mixValue);
         glBindVertexArray(VAO1);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // glUseProgram(shaderProgramer2);
         // glBindVertexArray(VAO2);
