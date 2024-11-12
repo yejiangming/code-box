@@ -4,6 +4,9 @@
 #include <iostream>
 #include <cmath>
 #include "stb_image.h"
+#include "../include/glm/glm.hpp"
+#include "../include/glm/gtc/matrix_transform.hpp"
+#include "../include/glm/gtc/type_ptr.hpp"
 
 float mixValue = 0.2f;
 
@@ -217,12 +220,24 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // 状态设置函数
         glClear(GL_COLOR_BUFFER_BIT); // 状态使用函数
 
+        float current =  (float)glfwGetTime();
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, current, glm::vec3(0.0f, 0.0f, 1.0f));
+        unsigned int transformLoc = glGetUniformLocation(shaderProgramer.id, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
-        float timeValue = glfwGetTime();
-        float mixDelta = ((sin(timeValue) / 2)+0.5f);
-        shaderProgramer.setFloat("mixValue", mixValue);
+        // shaderProgramer.setFloat("mixValue", mixValue);
         glBindVertexArray(VAO1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        
+        float scale = abs(sin(current));
+        trans = glm::mat4(1.0f);
+        trans = glm::scale(trans, glm::vec3(scale, scale, scale));
+        trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
         // glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // glUseProgram(shaderProgramer2);
