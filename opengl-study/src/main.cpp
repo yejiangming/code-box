@@ -1,5 +1,6 @@
 #include "../include/glad/glad.h"
 #include "shader.h"
+#include "camera.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <cmath>
@@ -8,9 +9,45 @@
 #include "../include/glm/gtc/matrix_transform.hpp"
 #include "../include/glm/gtc/type_ptr.hpp"
 
-float mixValue = 0.2f;
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
+
+Camera camera(glm::vec3(-3.0f, 0.0f, 0.0f));
+
+float deltaTime = 0.0f;
+
+bool firstMouse = true;
+// 设置初始的鼠标位置
+float lastX = 400, lastY = 300;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+
+// xpos, ypos 代表鼠标位置
+// 鼠标越往右 xpos 越大, 越往下 ypos 越大
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+    // std::cout << "xpos:" << xpos << " " << "ypos:" << ypos << std::endl;
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if(firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
 
 GLFWwindow* glfwWindowInit() {
     // 设置 GLFW 创建 openGL 上下文时的参数
@@ -20,7 +57,7 @@ GLFWwindow* glfwWindowInit() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // 创建窗口对象
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
     if(window == NULL) {
         std::cout << "Failed to create glfw window" << std::endl;
         glfwTerminate();
@@ -30,6 +67,10 @@ GLFWwindow* glfwWindowInit() {
     // 通知GLFW将窗口的上下文设置为当前线程的主上下文
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     return window;
 }
@@ -43,42 +84,76 @@ void processInput(GLFWwindow *window) {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
-
-    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        mixValue += 0.01f;
-        if (mixValue >= 1.0f) {
-            mixValue = 1.0f;
-        }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        camera.ProcessKeyboard(FORWARD, deltaTime);
     }
-
-    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        mixValue -= 0.01f;
-        if (mixValue <= 0.0f) {
-            mixValue = 0.0f;
-        }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
     }
-
-
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+    }
 }
 
 unsigned int createTrangle(float delta) {
 
     float vertices[] = {
-//     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
-};
-    unsigned int indices[] = {
-        0, 1, 2, 2, 3, 0
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
+    // unsigned int indices[] = {
+    //     0, 1, 2, 2, 3, 0
+    // };
+
     // openGL 核心模式要求使用 VAO
-    unsigned int VAO, VBO, EBO;
+    unsigned int VAO, VBO;
+    // unsigned int EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    // glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
@@ -94,15 +169,15 @@ unsigned int createTrangle(float delta) {
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // 第一个 0 代表将数据传递到 vertex shader layout(location=0) 属性中
     // 属性值有 3 * float 个数据那么大
     // 是否希望数据被标准化(Normalize)
     // stride 步长: 连续的位置点之间的间隔
     // 位置属性
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
     // 每个顶点属性从 VBO 中获取数据
     // 具体从哪个则是由调用 glVertexAttribPointer 时绑定到 GL_ARRAY_BUFFER 的 VBO 决定的
     // 所以顶点属性 0 现在会从之前定义的 VBO 中获取数据
@@ -111,12 +186,12 @@ unsigned int createTrangle(float delta) {
     glEnableVertexAttribArray(0);
 
     // 颜色属性
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+    // glEnableVertexAttribArray(1);
 
     // UV 属性
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // 解绑 VBO
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -182,6 +257,9 @@ int main()
         return -1;
     }
 
+    // 启用深度测试
+    glEnable(GL_DEPTH_TEST);
+
     Shader shaderProgramer("../shader/sample.vs", 
     "../shader/sample.fs");
 
@@ -207,10 +285,12 @@ int main()
 
     shaderProgramer.setInt("texture1", 0);
     shaderProgramer.setInt("texture2", 1);
-
+    
     // render loop
     while(!glfwWindowShouldClose(window)) {
 
+        float startTime = (float)glfwGetTime();
+        
         // 输入
         processInput(window);
 
@@ -218,27 +298,24 @@ int main()
 
         // 设置清空屏幕所用的颜色
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // 状态设置函数
-        glClear(GL_COLOR_BUFFER_BIT); // 状态使用函数
 
-        float current =  (float)glfwGetTime();
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-        trans = glm::rotate(trans, current, glm::vec3(0.0f, 0.0f, 1.0f));
-        unsigned int transformLoc = glGetUniformLocation(shaderProgramer.id, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        // 在没一帧前清理 颜色缓冲 深度缓冲
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
         // shaderProgramer.setFloat("mixValue", mixValue);
         glBindVertexArray(VAO1);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        
-        float scale = abs(sin(current));
-        trans = glm::mat4(1.0f);
-        trans = glm::scale(trans, glm::vec3(scale, scale, scale));
-        trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), float(SCR_WIDTH/SCR_HEIGHT), 0.1f, 1000.0f);
+        shaderProgramer.setMat4f("projection", glm::value_ptr(projection));
+
+        glm::mat4 view = camera.GetViewMatrix();
+        shaderProgramer.setMat4f("view", glm::value_ptr(view));
+
+        glm::mat4 model = glm::mat4(1.0f);
+        shaderProgramer.setMat4f("model", glm::value_ptr(model));
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // glUseProgram(shaderProgramer2);
         // glBindVertexArray(VAO2);
@@ -249,6 +326,11 @@ int main()
 
         // 将颜色缓冲绘制到窗口
         glfwSwapBuffers(window);
+
+        float endTime = glfwGetTime();
+        deltaTime = endTime - startTime;
+        // std::cout << "deltaTime: " << deltaTime << std::endl;
+
 
     }
 
