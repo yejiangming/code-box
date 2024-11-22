@@ -8,11 +8,13 @@
 #include "../include/glm/glm.hpp"
 #include "../include/glm/gtc/matrix_transform.hpp"
 #include "../include/glm/gtc/type_ptr.hpp"
+#include "geometry.h"
+#include "sample_camera.h"
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(-3.0f, 0.0f, 0.0f));
+Camera camera(glm::vec3(-20.0f, 5.0f, 0.0f));
 
 float deltaTime = 0.0f;
 
@@ -260,31 +262,43 @@ int main()
     // 启用深度测试
     glEnable(GL_DEPTH_TEST);
 
-    Shader shaderProgramer("../shader/sample.vs", 
-    "../shader/sample.fs");
+    Shader boxShader("../shader/box.vs", 
+    "../shader/box.fs");
+
+    Shader lightShader("../shader/light.vs",
+    "../shader/light.fs"); 
 
     // 设置渲染窗口大小 视口(viewport)
     // 左下角 0, 0
     // width 800
     // height 600
     // 可以讲 openGL 视口设置比 GLFW 小, 这样可以将一些其它元素显示在OpenGL视口之外
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
+    SampleCamera sampleCamera(glm::vec3(-5.0f, 5.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, -1.0f, 0.0f),
+    60.0f, (4.0f/3.0f), 0.1f, 1000.0f);
 
-    unsigned int VAO1 = createTrangle(0.0f);
+    glm::vec3 boxCentor(0.0f, 0.0f, 0.0f);
+    unsigned int box1 = createBox(boxCentor, 2.0f, 2.0f, 2.0f);
+
+    // glm::vec3 lightCentor(0.0f, 4.0f, 4.0f);
+    glm::vec3 lightCentor(3.0f, 3.0f, 0.0f);
+    unsigned int light1 = createBox(lightCentor, 0.5f, 0.5f, 0.5f);
+
+    // unsigned int VAO1 = createTrangle(0.0f);
     // unsigned int VAO2 = createTrangle(0.5f);
 
-    unsigned int texture1 = createTexture("../texture/container.jpg", GL_RGB, GL_REPEAT);
-    unsigned int texture2 = createTexture("../texture/awesomeface.png", GL_RGBA, GL_REPEAT);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture2);
+    // unsigned int texture1 = createTexture("../texture/container.jpg", GL_RGB, GL_REPEAT);
+    // unsigned int texture2 = createTexture("../texture/awesomeface.png", GL_RGBA, GL_REPEAT);
+    // glActiveTexture(GL_TEXTURE0);
+    // glBindTexture(GL_TEXTURE_2D, texture1);
+    // glActiveTexture(GL_TEXTURE1);
+    // glBindTexture(GL_TEXTURE_2D, texture2);
 
-    shaderProgramer.use();
+    // shaderProgramer.use();
 
-    shaderProgramer.setInt("texture1", 0);
-    shaderProgramer.setInt("texture2", 1);
+    // shaderProgramer.setInt("texture1", 0);
+    // shaderProgramer.setInt("texture2", 1);
     
     // render loop
     while(!glfwWindowShouldClose(window)) {
@@ -303,19 +317,43 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
         // shaderProgramer.setFloat("mixValue", mixValue);
-        glBindVertexArray(VAO1);
+        // glBindVertexArray(box1);
 
+        boxShader.use();
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), float(SCR_WIDTH/SCR_HEIGHT), 0.1f, 1000.0f);
-        shaderProgramer.setMat4f("projection", glm::value_ptr(projection));
+        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), float(SCR_WIDTH/SCR_HEIGHT), 0.1f, 1000.0f);
+        glm::mat4 projection = sampleCamera.GetPerspectiveMatrix();
+        boxShader.setMat4f("projection", glm::value_ptr(projection));
 
-        glm::mat4 view = camera.GetViewMatrix();
-        shaderProgramer.setMat4f("view", glm::value_ptr(view));
+        // glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 view = sampleCamera.GetViewMatrix();
+        boxShader.setMat4f("view", glm::value_ptr(view));
 
         glm::mat4 model = glm::mat4(1.0f);
-        shaderProgramer.setMat4f("model", glm::value_ptr(model));
+        // model = glm::scale(model, glm::vec3(1, 1, 1));
+        boxShader.setMat4f("model", glm::value_ptr(model));
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+        boxShader.setVec3f("lightColor", glm::value_ptr(lightColor));
+
+        glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.3f);
+        boxShader.setVec3f("objectColor", glm::value_ptr(objectColor));
+
+        boxShader.setVec3f("lightPos", glm::value_ptr(lightCentor));
+
+        boxShader.setVec3f("viewPos", glm::value_ptr(camera.Position));
+
+        drawBox(box1);
+
+        lightShader.use();
+
+        lightShader.setMat4f("projection", glm::value_ptr(projection));
+        lightShader.setMat4f("view", glm::value_ptr(view));
+        lightShader.setMat4f("model", glm::value_ptr(model));
+        lightShader.setVec3f("lightColor", glm::value_ptr(lightColor));
+
+        drawBox(light1);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // glUseProgram(shaderProgramer2);
         // glBindVertexArray(VAO2);

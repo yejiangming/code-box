@@ -113,5 +113,10 @@ public:
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value);
     }
 
+    void setVec3f(const std::string &name, float* value) const {
+        int loc = glGetUniformLocation(id, name.c_str());
+        glUniform3fv(loc, 1, value);
+    }
+
 };
 #endif

@@ -18,6 +18,7 @@ set(SOURCES
     main.cpp
     glad.c
     stb_image.cpp
+    geometry.cpp
 )
 
 # 添加可执行文件
