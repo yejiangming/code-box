@@ -26,9 +26,11 @@ public:
     SampleCamera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f),
     float fov = 45.0f, float aspect = 4.0f/3.0f, float near = 0.1f, float far = 1000.0f)
     {
+
+
         Position = position;
-        WorldUp = up;
-        Front = front;
+        WorldUp = glm::normalize(up);
+        Front = glm::normalize(front);
 
         Fov = fov;
         Aspect = aspect;

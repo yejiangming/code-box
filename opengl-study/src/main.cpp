@@ -14,7 +14,7 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(-20.0f, 5.0f, 0.0f));
+// Camera camera(glm::vec3(-20.0f, 5.0f, 0.0f));
 
 float deltaTime = 0.0f;
 
@@ -23,33 +23,34 @@ bool firstMouse = true;
 float lastX = 400, lastY = 300;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+// void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+// void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // xpos, ypos 代表鼠标位置
 // 鼠标越往右 xpos 越大, 越往下 ypos 越大
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
-    // std::cout << "xpos:" << xpos << " " << "ypos:" << ypos << std::endl;
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
+// void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+//     // std::cout << "xpos:" << xpos << " " << "ypos:" << ypos << std::endl;
+//     float xpos = static_cast<float>(xposIn);
+//     float ypos = static_cast<float>(yposIn);
 
-    if(firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
+//     if(firstMouse) {
+//         lastX = xpos;
+//         lastY = ypos;
+//         firstMouse = false;
+//     }
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
+//     float xoffset = xpos - lastX;
+//     float yoffset = lastY - ypos;
     
-    lastX = xpos;
-    lastY = ypos;
+//     lastX = xpos;
+//     lastY = ypos;
 
-    camera.ProcessMouseMovement(xoffset, yoffset);
-}
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
-    camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
+//     camera.ProcessMouseMovement(xoffset, yoffset);
+// }
+
+// void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+//     camera.ProcessMouseScroll(static_cast<float>(yoffset));
+// }
 
 GLFWwindow* glfwWindowInit() {
     // 设置 GLFW 创建 openGL 上下文时的参数
@@ -71,8 +72,8 @@ GLFWwindow* glfwWindowInit() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    // glfwSetCursorPosCallback(window, mouse_callback);
+    // glfwSetScrollCallback(window, scroll_callback);
 
     return window;
 }
@@ -86,18 +87,18 @@ void processInput(GLFWwindow *window) {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.ProcessKeyboard(RIGHT, deltaTime);
-    }
+    // if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    //     camera.ProcessKeyboard(FORWARD, deltaTime);
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    //     camera.ProcessKeyboard(BACKWARD, deltaTime);
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    //     camera.ProcessKeyboard(LEFT, deltaTime);
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    //     camera.ProcessKeyboard(RIGHT, deltaTime);
+    // }
 }
 
 unsigned int createTrangle(float delta) {
@@ -262,8 +263,11 @@ int main()
     // 启用深度测试
     glEnable(GL_DEPTH_TEST);
 
-    Shader boxShader("../shader/box.vs", 
-    "../shader/box.fs");
+    Shader boxShader("../shader/box_viewworld.vs", 
+    "../shader/box_viewworld.fs");
+
+    // Shader boxShader("../shader/box.vs", 
+    // "../shader/box.fs");
 
     Shader lightShader("../shader/light.vs",
     "../shader/light.fs"); 
@@ -275,15 +279,15 @@ int main()
     // 可以讲 openGL 视口设置比 GLFW 小, 这样可以将一些其它元素显示在OpenGL视口之外
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-    SampleCamera sampleCamera(glm::vec3(-5.0f, 5.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, -1.0f, 0.0f),
-    60.0f, (4.0f/3.0f), 0.1f, 1000.0f);
+    SampleCamera sampleCamera(glm::vec3(-4.0f, 3.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(4.0f, -3.0f, 0.0f),
+    75.0f, (4.0f/3.0f), 0.1f, 1000.0f);
 
     glm::vec3 boxCentor(0.0f, 0.0f, 0.0f);
-    unsigned int box1 = createBox(boxCentor, 2.0f, 2.0f, 2.0f);
+    unsigned int box1 = createBox(boxCentor, 1.0f, 1.0f, 1.0f);
 
     // glm::vec3 lightCentor(0.0f, 4.0f, 4.0f);
-    glm::vec3 lightCentor(3.0f, 3.0f, 0.0f);
-    unsigned int light1 = createBox(lightCentor, 0.5f, 0.5f, 0.5f);
+    glm::vec3 lightCentor(0.0f, 2.0f, 0.0f);
+    unsigned int light1 = createBox(lightCentor, 0.1f, 0.1f, 0.1f);
 
     // unsigned int VAO1 = createTrangle(0.0f);
     // unsigned int VAO2 = createTrangle(0.5f);
@@ -304,7 +308,7 @@ int main()
     while(!glfwWindowShouldClose(window)) {
 
         float startTime = (float)glfwGetTime();
-        
+
         // 输入
         processInput(window);
 
@@ -319,37 +323,47 @@ int main()
         // shaderProgramer.setFloat("mixValue", mixValue);
         // glBindVertexArray(box1);
 
+        // lightModel = glm::translate(lightModel, glm::vec3(sin(startTime), 0.0, cos(startTime)));
+
+        glm::mat4 boxModel = glm::mat4(1.0f);
+        // float angle = glm::radians(startTime*10); 
+        // glm::vec3 axis = glm::vec3(0, 1, 0); 
+        // boxModel = glm::rotate(boxModel, angle, axis);
+
+        glm::mat4 lightModel = glm::mat4(1.0f);
+
         boxShader.use();
 
-        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), float(SCR_WIDTH/SCR_HEIGHT), 0.1f, 1000.0f);
-        glm::mat4 projection = sampleCamera.GetPerspectiveMatrix();
-        boxShader.setMat4f("projection", glm::value_ptr(projection));
+        boxShader.setMat4f("model", glm::value_ptr(boxModel));
+        glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
         // glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 view = sampleCamera.GetViewMatrix();
         boxShader.setMat4f("view", glm::value_ptr(view));
 
-        glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::scale(model, glm::vec3(1, 1, 1));
-        boxShader.setMat4f("model", glm::value_ptr(model));
+        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), float(SCR_WIDTH/SCR_HEIGHT), 0.1f, 1000.0f);
+        glm::mat4 projection = sampleCamera.GetPerspectiveMatrix();
+        boxShader.setMat4f("projection", glm::value_ptr(projection));
 
-        glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
         boxShader.setVec3f("lightColor", glm::value_ptr(lightColor));
-
         glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.3f);
         boxShader.setVec3f("objectColor", glm::value_ptr(objectColor));
 
-        boxShader.setVec3f("lightPos", glm::value_ptr(lightCentor));
+        lightModel = glm::translate(lightModel, glm::vec3(cos(glm::radians(startTime*30)), 0, sin(glm::radians(startTime*30))));
+        glm::vec3 worldLightPos =  glm::vec3(lightModel * glm::vec4(lightCentor, 1.0f));
+        // glm::vec3 viewLightPos = glm::vec3(view * glm::vec4(worldLightPos, 1.0f));
 
-        boxShader.setVec3f("viewPos", glm::value_ptr(camera.Position));
+        boxShader.setVec3f("lightPos", glm::value_ptr(worldLightPos));
+        // boxShader.setVec3f("lightPos", glm::value_ptr(viewLightPos));
+
+        boxShader.setVec3f("viewPos", glm::value_ptr(sampleCamera.Position));
 
         drawBox(box1);
 
         lightShader.use();
-
         lightShader.setMat4f("projection", glm::value_ptr(projection));
         lightShader.setMat4f("view", glm::value_ptr(view));
-        lightShader.setMat4f("model", glm::value_ptr(model));
+        lightShader.setMat4f("model", glm::value_ptr(lightModel));
         lightShader.setVec3f("lightColor", glm::value_ptr(lightColor));
 
         drawBox(light1);
@@ -368,7 +382,6 @@ int main()
         float endTime = glfwGetTime();
         deltaTime = endTime - startTime;
         // std::cout << "deltaTime: " << deltaTime << std::endl;
-
 
     }
 
