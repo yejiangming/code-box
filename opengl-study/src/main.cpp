@@ -214,7 +214,7 @@ unsigned int createTrangle(float delta) {
     return VAO;
 }
 
-unsigned int createTexture(const char* filePath, GLenum format, GLint repeatType) {
+unsigned int createTexture(const char* filePath) {
 // 读取图片
     int width, height, nrChannels;
     // 加载图像时翻转 y 轴, 因为图像的 y 轴 0.0 在顶部, 而 openGL uv 坐标中的 0 代表底部
@@ -224,6 +224,15 @@ unsigned int createTexture(const char* filePath, GLenum format, GLint repeatType
     if (!data) {
         std::cout << "Fail to read image" << std::endl;
     }
+
+    GLenum format;
+    if (nrChannels == 1){
+        format = GL_RED;
+    } else if (nrChannels == 3) {
+        format = GL_RGB;
+    } else if (nrChannels == 4) {
+        format = GL_RGBA;
+    }
     // 生成纹理
     unsigned int texture;
     glGenTextures(1, &texture);
@@ -231,12 +240,12 @@ unsigned int createTexture(const char* filePath, GLenum format, GLint repeatType
     // 绑定纹理, 之后的纹理指令都可以配置当前绑定的纹理
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeatType);   
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeatType);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);   
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINE);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     // 自动生成多级渐远纹理    
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
@@ -292,16 +301,8 @@ int main()
     // unsigned int VAO1 = createTrangle(0.0f);
     // unsigned int VAO2 = createTrangle(0.5f);
 
-    // unsigned int texture1 = createTexture("../texture/container.jpg", GL_RGB, GL_REPEAT);
-    // unsigned int texture2 = createTexture("../texture/awesomeface.png", GL_RGBA, GL_REPEAT);
-    // glActiveTexture(GL_TEXTURE0);
-    // glBindTexture(GL_TEXTURE_2D, texture1);
-    // glActiveTexture(GL_TEXTURE1);
-    // glBindTexture(GL_TEXTURE_2D, texture2);
+    unsigned int texture1 = createTexture("../texture/container2.png");
 
-    // shaderProgramer.use();
-
-    // shaderProgramer.setInt("texture1", 0);
     // shaderProgramer.setInt("texture2", 1);
     
     // render loop
@@ -341,8 +342,8 @@ int main()
         // lightColor.y = sin(startTime * 0.7f);
         // lightColor.z = sin(startTime * 1.3f);
 
-        glm::vec3 lAmbient = lightColor * glm::vec3(1.0f);
-        glm::vec3 lDiffuse = lightColor * glm::vec3(1.0f);
+        glm::vec3 lAmbient = lightColor * glm::vec3(0.2f);
+        glm::vec3 lDiffuse = lightColor * glm::vec3(0.5f);
         glm::vec3 lSpecular(1.0f, 1.0f, 1.0f);
 
         // glm::vec3 lAmbient = lightColor * glm::vec3(1.0f);
@@ -383,6 +384,10 @@ int main()
         boxShader.setVec3f("light.ambient",  glm::value_ptr(lAmbient));
         boxShader.setVec3f("light.diffuse",  glm::value_ptr(lDiffuse));
         boxShader.setVec3f("light.specular", glm::value_ptr(lSpecular));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        boxShader.setInt("material.diffuse", 0);
 
         drawBox(box1);
 

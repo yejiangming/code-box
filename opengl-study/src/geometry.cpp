@@ -78,6 +78,50 @@ unsigned int createBox(glm::vec3 centor, float halfx, float halfy, float halfz) 
         0.0f,  1.0f,  0.0f
     };
 
+    float textureCoords[] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+
+        0.0f, 1.0f,
+        1.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 1.0f,
+
+        0.0f, 1.0f,
+        1.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 1.0f
+    };
+
     for(int i = 0; i < 36; i++) {
         float x_d = x_direction[i];
         float y_d = y_direction[i];
@@ -91,9 +135,11 @@ unsigned int createBox(glm::vec3 centor, float halfx, float halfy, float halfz) 
     unsigned int VAO;
     unsigned int VBO;
     unsigned int NBO;
+    unsigned int TBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &NBO);
+    glGenBuffers(1, &TBO);
 
     glBindVertexArray(VAO);
 
@@ -106,6 +152,11 @@ unsigned int createBox(glm::vec3 centor, float halfx, float halfy, float halfz) 
     glBufferData(GL_ARRAY_BUFFER, 6*6*3*4, norms, GL_STATIC_DRAW);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, TBO);
+    glBufferData(GL_ARRAY_BUFFER, 6*6*2*4, textureCoords, GL_STATIC_DRAW);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
