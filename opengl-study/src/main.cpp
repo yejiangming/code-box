@@ -263,8 +263,8 @@ int main()
     // 启用深度测试
     glEnable(GL_DEPTH_TEST);
 
-    Shader boxShader("../shader/box_viewworld.vs", 
-    "../shader/box_viewworld.fs");
+    Shader boxShader("../shader/box.vs", 
+    "../shader/box.fs");
 
     // Shader boxShader("../shader/box.vs", 
     // "../shader/box.fs");
@@ -335,7 +335,19 @@ int main()
         boxShader.use();
 
         boxShader.setMat4f("model", glm::value_ptr(boxModel));
-        glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
+        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+        // lightColor.x = sin(startTime * 2.0f);
+        // lightColor.y = sin(startTime * 0.7f);
+        // lightColor.z = sin(startTime * 1.3f);
+
+        glm::vec3 lAmbient = lightColor * glm::vec3(1.0f);
+        glm::vec3 lDiffuse = lightColor * glm::vec3(1.0f);
+        glm::vec3 lSpecular(1.0f, 1.0f, 1.0f);
+
+        // glm::vec3 lAmbient = lightColor * glm::vec3(1.0f);
+        // glm::vec3 lDiffuse = lightColor * glm::vec3(1.0f);
+        // glm::vec3 lSpecular = lightColor * glm::vec3(1.0f);
 
         // glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 view = sampleCamera.GetViewMatrix();
@@ -357,6 +369,20 @@ int main()
         // boxShader.setVec3f("lightPos", glm::value_ptr(viewLightPos));
 
         boxShader.setVec3f("viewPos", glm::value_ptr(sampleCamera.Position));
+
+        glm::vec3 mAmbient(0.24725f,0.1995f,0.0745f);
+        glm::vec3 mDiffuse(0.75164f,0.60648f,0.22648f);
+        glm::vec3 mSpecular(0.628281f, 0.555802f, 0.366065f);
+        float shininess = 32;
+
+        boxShader.setVec3f("material.ambient",  glm::value_ptr(mAmbient));
+        boxShader.setVec3f("material.diffuse",  glm::value_ptr(mDiffuse));
+        boxShader.setVec3f("material.specular", glm::value_ptr(mSpecular));
+        boxShader.setFloat("material.shininess", shininess);
+
+        boxShader.setVec3f("light.ambient",  glm::value_ptr(lAmbient));
+        boxShader.setVec3f("light.diffuse",  glm::value_ptr(lDiffuse));
+        boxShader.setVec3f("light.specular", glm::value_ptr(lSpecular));
 
         drawBox(box1);
 
