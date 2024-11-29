@@ -233,6 +233,8 @@ unsigned int createTexture(const char* filePath) {
     } else if (nrChannels == 4) {
         format = GL_RGBA;
     }
+
+    std::cout << "fileName: " << filePath << " format: " << std::hex << format << std::endl;
     // 生成纹理
     unsigned int texture;
     glGenTextures(1, &texture);
@@ -301,8 +303,9 @@ int main()
     // unsigned int VAO1 = createTrangle(0.0f);
     // unsigned int VAO2 = createTrangle(0.5f);
 
-    unsigned int texture1 = createTexture("../texture/container2.png");
-
+    unsigned int textureDifussion = createTexture("../texture/container2.png");
+    unsigned int textureSpecular = createTexture("../texture/container2_specular.png");
+    unsigned int textureEmission = createTexture("../texture/matrix.jpg");
     // shaderProgramer.setInt("texture2", 1);
     
     // render loop
@@ -344,7 +347,7 @@ int main()
 
         glm::vec3 lAmbient = lightColor * glm::vec3(0.2f);
         glm::vec3 lDiffuse = lightColor * glm::vec3(0.5f);
-        glm::vec3 lSpecular(1.0f, 1.0f, 1.0f);
+        glm::vec3 lSpecular = lightColor * glm::vec3(1.0f);
 
         // glm::vec3 lAmbient = lightColor * glm::vec3(1.0f);
         // glm::vec3 lDiffuse = lightColor * glm::vec3(1.0f);
@@ -386,8 +389,15 @@ int main()
         boxShader.setVec3f("light.specular", glm::value_ptr(lSpecular));
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        glBindTexture(GL_TEXTURE_2D, textureDifussion);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textureSpecular);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, textureEmission);
         boxShader.setInt("material.diffuse", 0);
+        boxShader.setInt("material.specular", 1);
+        boxShader.setInt("material.emission", 2);
+        boxShader.setFloat("material.movement", startTime);
 
         drawBox(box1);
 
