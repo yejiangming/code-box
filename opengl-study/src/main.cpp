@@ -290,11 +290,24 @@ int main()
     // 可以讲 openGL 视口设置比 GLFW 小, 这样可以将一些其它元素显示在OpenGL视口之外
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-    SampleCamera sampleCamera(glm::vec3(-4.0f, 3.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(4.0f, -3.0f, 0.0f),
+    SampleCamera sampleCamera(glm::vec3(5.0f, 5.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-6.0f, -6.0f, 0.0f),
     75.0f, (4.0f/3.0f), 0.1f, 1000.0f);
 
     glm::vec3 boxCentor(0.0f, 0.0f, 0.0f);
-    unsigned int box1 = createBox(boxCentor, 1.0f, 1.0f, 1.0f);
+    unsigned int box1 = createBox(boxCentor, 0.5f, 0.5f, 0.5f);
+
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
 
     // glm::vec3 lightCentor(0.0f, 4.0f, 4.0f);
     glm::vec3 lightCentor(0.0f, 2.0f, 0.0f);
@@ -338,8 +351,6 @@ int main()
 
         boxShader.use();
 
-        boxShader.setMat4f("model", glm::value_ptr(boxModel));
-
         glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
         // lightColor.x = sin(startTime * 2.0f);
         // lightColor.y = sin(startTime * 0.7f);
@@ -348,6 +359,8 @@ int main()
         glm::vec3 lAmbient = lightColor * glm::vec3(0.2f);
         glm::vec3 lDiffuse = lightColor * glm::vec3(0.5f);
         glm::vec3 lSpecular = lightColor * glm::vec3(1.0f);
+
+        glm::vec3 lightDirection = glm::vec3(sin(startTime), -2.0f, cos(startTime));
 
         // glm::vec3 lAmbient = lightColor * glm::vec3(1.0f);
         // glm::vec3 lDiffuse = lightColor * glm::vec3(1.0f);
@@ -361,16 +374,15 @@ int main()
         glm::mat4 projection = sampleCamera.GetPerspectiveMatrix();
         boxShader.setMat4f("projection", glm::value_ptr(projection));
 
-        boxShader.setVec3f("lightColor", glm::value_ptr(lightColor));
-        glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.3f);
-        boxShader.setVec3f("objectColor", glm::value_ptr(objectColor));
-
-        lightModel = glm::translate(lightModel, glm::vec3(cos(glm::radians(startTime*30)), 0, sin(glm::radians(startTime*30))));
+        lightModel = glm::translate(lightModel, glm::vec3(3*cos(glm::radians(startTime*30)), 0, 3*sin(glm::radians(startTime*30))));
         glm::vec3 worldLightPos =  glm::vec3(lightModel * glm::vec4(lightCentor, 1.0f));
         // glm::vec3 viewLightPos = glm::vec3(view * glm::vec4(worldLightPos, 1.0f));
 
-        boxShader.setVec3f("lightPos", glm::value_ptr(worldLightPos));
+        // boxShader.setVec3f("light.position", glm::value_ptr(worldLightPos));
         // boxShader.setVec3f("lightPos", glm::value_ptr(viewLightPos));
+        boxShader.setVec3f("light.position", glm::value_ptr(sampleCamera.Position));
+        boxShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+        boxShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 
         boxShader.setVec3f("viewPos", glm::value_ptr(sampleCamera.Position));
 
@@ -387,6 +399,12 @@ int main()
         boxShader.setVec3f("light.ambient",  glm::value_ptr(lAmbient));
         boxShader.setVec3f("light.diffuse",  glm::value_ptr(lDiffuse));
         boxShader.setVec3f("light.specular", glm::value_ptr(lSpecular));
+        // boxShader.setVec3f("light.direction", glm::value_ptr(lightDirection));
+        boxShader.setVec3f("light.direction", glm::value_ptr(sampleCamera.Front));
+
+        boxShader.setFloat("light.constant", 1.0f);
+        boxShader.setFloat("light.linear", 0.09f);
+        boxShader.setFloat("light.quadratic", 0.032f);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureDifussion);
@@ -399,7 +417,14 @@ int main()
         boxShader.setInt("material.emission", 2);
         boxShader.setFloat("material.movement", startTime);
 
-        drawBox(box1);
+        for (int i = 0; i < 10; i++) {
+            glm::mat4 boxModel = glm::mat4(1.0f);
+            boxModel = glm::translate(boxModel, cubePositions[i]);
+            float angle = 20.0f * i;
+            boxModel = glm::rotate(boxModel, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            boxShader.setMat4f("model", glm::value_ptr(boxModel));
+            drawBox(box1);
+        }
 
         lightShader.use();
         lightShader.setMat4f("projection", glm::value_ptr(projection));
@@ -407,7 +432,7 @@ int main()
         lightShader.setMat4f("model", glm::value_ptr(lightModel));
         lightShader.setVec3f("lightColor", glm::value_ptr(lightColor));
 
-        drawBox(light1);
+        // drawBox(light1);
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // glUseProgram(shaderProgramer2);
