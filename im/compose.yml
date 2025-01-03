@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  im-mysql:
+    image: mysql:8.0
+    container_name: im-mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: im-mysql-password
+
+  im-redis:
+    image: redis:6.0
+    container_name: im-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass im-redis
+    volumes:
+      - ./volumes/redis/data:/data
+      - ./volumes/redis/redis.conf:/usr/local/etc/redis/redis.conf
