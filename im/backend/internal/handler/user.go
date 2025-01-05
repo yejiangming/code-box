@@ -17,7 +17,7 @@ func UserRegister(c *gin.Context) {
 		return
 	}
 
-	if err := service.UserRegister(param); err != nil {
+	if err := service.UserRegister(c, param); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})

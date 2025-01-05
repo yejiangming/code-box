@@ -2,12 +2,19 @@ package main
 
 import (
 	"im/internal/handler"
+	redisidgenerator "im/internal/infra/redis-id-generator"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+
+	err := redisidgenerator.Init()
+	if err != nil {
+		panic(err)
+	}
+
 	router := gin.New()
 
 	userGroup := router.Group("/user")

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	redisidgenerator "im/internal/infra/redis-id-generator"
 	"im/internal/model"
 	"im/internal/store"
 	"time"
@@ -12,7 +14,7 @@ type UserRegisterParam struct {
 	Phone    string `json:"phone" binding:"required"`
 }
 
-func UserRegister(param UserRegisterParam) error {
+func UserRegister(ctx context.Context, param UserRegisterParam) error {
 
 	t := time.Now()
 	userModel := model.UserModel{
@@ -22,8 +24,17 @@ func UserRegister(param UserRegisterParam) error {
 		CreateTime: t,
 		UpdateTime: t,
 	}
-	err := store.ImDB.Table(model.UserTableName()).Create(&userModel).Error
+
+	uid, err := redisidgenerator.UidGenerator.NextId(ctx)
 	if err != nil {
+		return err
+	}
+	userModel.Uid = uid
+	userModel.Uid = 51
+
+	err = store.ImDB.Table(model.UserTableName()).Create(&userModel).Error
+	if err != nil {
+		// TODO uid 重复时, 设置重新申请号段发号
 		return err
 	}
 
