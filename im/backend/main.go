@@ -17,6 +17,10 @@ func main() {
 
 	router := gin.New()
 
+	router.Static("/html", "./static/html")
+	router.Static("/css", "./static/css")
+	router.Static("/js", "./static/js")
+
 	userGroup := router.Group("/user")
 	userGroup.POST("/register", handler.UserRegister)
 

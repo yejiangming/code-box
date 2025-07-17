@@ -30,7 +30,6 @@ func UserRegister(ctx context.Context, param UserRegisterParam) error {
 		return err
 	}
 	userModel.Uid = uid
-	userModel.Uid = 51
 
 	err = store.ImDB.Table(model.UserTableName()).Create(&userModel).Error
 	if err != nil {
